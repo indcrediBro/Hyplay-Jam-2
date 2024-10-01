@@ -72,3 +72,7 @@ crashlytics-build.properties
 /[Aa]ssets/[Ss]treamingAssets/aa/*
 /Assets/ProCore
 Assets/ProCore.meta
+/Assets/SkullsInSombreros2
+Assets/SkullsInSombreros2.meta
+/Assets/Standard Assets
+Assets/Standard Assets.meta
