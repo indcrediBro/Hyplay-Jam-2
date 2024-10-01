@@ -1,11 +1,11 @@
 public class Player : Combatant
 {
-    public int ammo = 5;
-    public int damageBoost = 0;
-    public bool isDisarmed = false;
+    public int m_Ammo = 5;
+    public int m_DamageBoost = 0;
+    public bool m_IsDisarmed = false;
 
     public Player() : base(100, 20) { }
 
-    public void Heal(int amount) { m_Health += amount; }
-    public void Reload() { ammo += 1; }
+    public void Heal(int _amount) { m_Health += _amount; }
+    public void Reload() { m_Ammo += 1; }
 }
