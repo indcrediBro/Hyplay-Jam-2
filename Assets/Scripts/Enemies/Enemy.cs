@@ -1,16 +1,37 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 
-public class Enemy : Combatant
+public class Enemy : Character
 {
-    public int attackDamage = 10;
+    public List<Card> cards;
+    [SerializeField] private bool randomiseAttacks = true;
+    private int currentAttackIndex;
 
-    public Enemy() : base(50, 10) { }
 
-    public void ApplyDebuff(DebuffType _debuff, int _amount)
+
+    public override void PlayTurn()
     {
-        if (_debuff == DebuffType.Disarm)
-            attackDamage = 0;
-        if (_debuff == DebuffType.Weaken)
-            attackDamage = Mathf.Max(0, attackDamage - _amount);
+        StartCoroutine(PlayAction());
+        TickEffects();  // Reduces duration of temporary effects
+    }
+
+    private IEnumerator PlayAction()
+    {
+        if (randomiseAttacks)
+        {
+            cards[Random.Range(0, cards.Count)].Play(this, GameFlowManager.Instance.player); // Passing self and target
+        }
+        else
+        {
+            cards[currentAttackIndex].Play(this, GameFlowManager.Instance.player); // Passing self and target
+            currentAttackIndex++;
+            if (currentAttackIndex >= cards.Count)
+            {
+                currentAttackIndex = 0;
+            }
+        }
+        yield return new WaitForSeconds(.3f);
+        TurnEnded = true;
     }
 }

@@ -14,4 +14,10 @@ public enum DebuffType
     Cripple
 }
 
+public enum CardRarity
+{
+    Common,
+    Uncommon,
+    Rare
+}
 
