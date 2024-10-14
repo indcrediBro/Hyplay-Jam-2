@@ -19,7 +19,11 @@ public class LeaderboardController : Singleton<LeaderboardController>
     {
         var res = await HyplayBridge.GuestLoginAndReturnUserAsync();
         if (res.Success)
+        {
             Debug.Log($"signing in: {res.Data.Username}");
+            if (HyplayBridge.IsLoggedIn)
+                GetScores();
+        }
         else
             Debug.LogError($"Error signing in: {res.Error}");
 
@@ -47,6 +51,10 @@ public class LeaderboardController : Singleton<LeaderboardController>
     public async void SubmitScore(string username, int score)
     {
         HyplayBridge.CurrentUser.Id = username;
-        await leaderboard.PostScore(score);
+        var res = await leaderboard.PostScore(score);
+        if (!res.Success)
+            Debug.LogError($"Error Submitting Leaderboard: {res.Error}");
+        //HyplayBridge.CurrentUser.Id = username;
+        //await leaderboard.PostScore(score);
     }
 }

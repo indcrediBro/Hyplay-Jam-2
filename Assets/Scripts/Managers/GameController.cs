@@ -268,7 +268,6 @@ public class GameController : Singleton<GameController>
         submittedText.SetActive(true);
         //Submit Entry
         LeaderboardController.Instance.SubmitScore(usernameInputText.text, player.Score);
-        LeaderboardController.Instance.GetScores();
     }
 
     public void ReturnToMainMenu()
