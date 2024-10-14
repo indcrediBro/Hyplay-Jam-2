@@ -1,0 +1,16 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dde5c3b847a434eba80606cd062dcf71, type: 3}
+  m_Name: Minor Enemy Node Blueprint
+  m_EditorClassIdentifier: 
+  sprite: {fileID: 21300000, guid: 6dce9b8d23d9c78439cea519d5d3d486, type: 3}
+  nodeType: 0

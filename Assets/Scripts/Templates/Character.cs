@@ -5,11 +5,17 @@ using UnityEngine.UI;
 
 public abstract class Character : MonoBehaviour
 {
+    public bool IsPlayer;
+    public string CharacterName;
+    public int Score;
+    public bool TurnEnded = false;
     public int Health;
     public int MaxHealth;
     public int Shield;
-    public int Strength;
-    public bool TurnEnded = false;
+    public int Ammo;
+    public int MaxAmmo;
+
+    [SerializeField] private List<IDurationalEffect> activeEffects = new List<IDurationalEffect>();
 
     [SerializeField] Slider healthbar;
     [SerializeField] TMP_Text healthText;
@@ -18,14 +24,15 @@ public abstract class Character : MonoBehaviour
     [SerializeField] Image strengthIcon;
     [SerializeField] TMP_Text strengthText;
 
-    protected List<TemporaryEffect> activeEffects = new List<TemporaryEffect>();
+    [SerializeField] Animator animator;
 
     protected virtual void Awake()
     {
+        if (!IsPlayer) Health = MaxHealth;
         UpdateUI();
     }
 
-    private void UpdateUI()
+    public void UpdateUI()
     {
         healthbar.minValue = 0;
         healthbar.maxValue = MaxHealth;
@@ -35,78 +42,90 @@ public abstract class Character : MonoBehaviour
 
         shieldIcon.gameObject.SetActive(Shield > 0);
         shieldText.text = Shield.ToString();
-
-        strengthIcon.gameObject.SetActive(Strength > 0);
-        strengthText.text = Strength.ToString();
     }
 
-    // Apply damage, considering shield
-    public virtual void TakeDamage(int amount)
+    public void ApplyDurationalEffects()
     {
-        int finalDamage = Mathf.Max(0, amount - Shield);
-        Health -= finalDamage;
-        Shield = Mathf.Max(0, Shield - amount);
+        foreach (var effect in activeEffects.ToArray()) // ToArray to avoid modifying during iteration
+        {
+            if (effect.IsExpired())
+            {
+                Debug.Log($"Effect expired: {effect.GetType()}");
+                RemoveDurationalEffect(effect);
+                continue;
+            }
+
+            StartCoroutine(effect.Apply(this, this)); // Assuming the target is self for now
+            effect.DecrementDuration();
+
+            // Debug log to track the effect's duration
+            Debug.Log($"Effect: {effect.GetType()}, Remaining Duration: {effect.GetDuration()}");
+
+        }
+
+        // Update UI after all effects have been applied
         UpdateUI();
     }
 
-    public virtual void GainHealth(int amount)
-    {
-        Health = Mathf.Min(MaxHealth, Health + amount);
-        UpdateUI();
-    }
 
-    public virtual void GainShield(int amount, int duration)
-    {
-        Shield += amount;
-        AddTemporaryEffect(new TemporaryEffect(EffectType.Shield, amount, duration));
-        UpdateUI();
-    }
 
-    public virtual void ModifyStrength(int amount, int duration)
-    {
-        Strength += amount;
-        AddTemporaryEffect(new TemporaryEffect(EffectType.Strength, amount, duration));
-        UpdateUI();
-    }
-
-    // Adds temporary effects for persistent effects like strength or shield
-    public void AddTemporaryEffect(TemporaryEffect effect)
+    // Add a durational effect
+    public void AddDurationalEffect(IDurationalEffect effect)
     {
         activeEffects.Add(effect);
-        UpdateUI();
     }
 
-    // Called at the start of each turn to reduce effect durations
-    public virtual void TickEffects()
+    private void RemoveDurationalEffect(IDurationalEffect effect)
     {
-        for (int i = activeEffects.Count - 1; i >= 0; i--)
+        if (effect is ShieldEffect shieldEffect)
         {
-            activeEffects[i].Tick();
-            if (activeEffects[i].IsExpired)
-            {
-                RemoveEffect(activeEffects[i]);
-                activeEffects.RemoveAt(i);
-            }
+            Debug.Log($"Removing shield effect with value: {shieldEffect.shieldValue}. Current Shield: {Shield}. On Player {IsPlayer}");
+
+            // Decrease the shield value by the shield effect's value
+            Shield = Mathf.Max(0, Shield - shieldEffect.shieldValue);
+
+            Debug.Log($"New Shield Value: {Shield}");
+
+            // Update the UI after the shield has been modified
+            UpdateUI();
+
+            // Trigger any shield removal animations if necessary
+            // TriggerAnimation("ShieldExpired");
         }
-        UpdateUI();
+
+        // Remove the effect from the list of active effects
+        activeEffects.Remove(effect);
     }
 
-    // Remove effect when duration ends
-    protected virtual void RemoveEffect(TemporaryEffect effect)
+
+
+
+    public virtual void TakeDamage(int amount)
     {
-        switch (effect.EffectType)
+        if (Shield > 0)
         {
-            case EffectType.Shield:
-                Shield -= effect.Value;
-                break;
-            case EffectType.Strength:
-                Strength -= effect.Value;
-                break;
-            default:
-                break;
+            int damageToShield = Mathf.Min(Shield, amount);
+            Shield -= damageToShield;
+
+            int remainingDamage = amount - damageToShield;
+            Health -= remainingDamage;
         }
-        UpdateUI();
+        else
+        {
+            Health -= amount;
+        }
+
+        Health = Mathf.Max(0, Health);
     }
 
-    public abstract void PlayTurn(); // Implemented by Player and Enemy
+    public virtual void TakePenetratingDamage(int amount)
+    {
+        Health -= amount;
+        Health = Mathf.Max(0, Health);
+    }
+
+    public void TriggerAnimation(string animationName)
+    {
+        animator.SetTrigger(animationName);
+    }
 }

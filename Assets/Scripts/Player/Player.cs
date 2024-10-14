@@ -6,11 +6,11 @@ using System;
 
 public class Player : Character
 {
-    public int Energy;
-    public int MaxEnergy;
     public Deck playerDeck;
-    public List<Card> Hand;
-
+    public List<CardUI> HandUI;
+    public CardUI SelectedCardUI;
+    private List<GameObject> bulletImages;
+    private Transform bulletParent;
     private Coroutine updateHandRoutine;
 
     protected override void Awake()
@@ -19,17 +19,13 @@ public class Player : Character
         MaxHealth = 100;
         Health = MaxHealth;
         Shield = 0;
-        Strength = 0;
-        MaxEnergy = 6; // Starting energy
-        Energy = MaxEnergy; // Starting energy
-
-        Hand = new List<Card>();
-        InitializeDeck(GameFlowManager.Instance.initialDeck);
-    }
-
-    private void Update()
-    {
-        TurnEnded = GameFlowManager.Instance.isPlayerTurn == false;
+        Ammo = MaxAmmo;
+        HandUI = new List<CardUI>();
+        bulletParent = GameDataReferences.Instance.bulletParent;
+        bulletImages = GameDataReferences.Instance.bulletImages;
+        InitializeDeck(GameDataReferences.Instance.initialDeck);
+        UpdateUI();
+        UpdateAmmoDisplay();
     }
 
     public void InitializeDeck(List<Card> initialDeck)
@@ -40,16 +36,69 @@ public class Player : Character
 
     public void StartTurn()
     {
-        Energy = MaxEnergy;
-        TickEffects(); // Apply effects like buffs/debuffs
         DrawHand();
         TurnEnded = false;
     }
 
-    public void UseCard(Card card)
+    public void SelectCard(CardUI cardUI)
     {
-        playerDeck.DiscardCard(card);
+        foreach (var c in HandUI)
+        {
+            if (c != cardUI)
+            {
+                if (c != null)
+                {
+                    c.transform.SetParent(GameDataReferences.Instance.cardSpawnParent.transform);
+                    c.DeselectCard();
+                }
+            }
+            else
+            {
+                SelectedCardUI = cardUI;
+                SelectedCardUI.transform.SetParent(GameDataReferences.Instance.cardSelectionParent);
+                SelectedCardUI.transform.DOKill();
+                SelectedCardUI.transform.DOLocalMove(Vector3.zero, .15f).OnComplete(() =>
+                {
+                    SelectedCardUI.transform.localRotation = Quaternion.identity;
+                });
+            }
+        }
+        GameDataReferences.Instance.cardSpawnParent.AlignChildrenInArc();
+
+        AudioManager.Instance.PlaySound("SFX_PanelOpen");
     }
+
+    public void DeselctCurrentCard()
+    {
+        SelectedCardUI = null;
+        GameDataReferences.Instance.cardSpawnParent.AlignChildrenInArc();
+    }
+
+    public void UseCard()
+    {
+        if (SelectedCardUI != null)
+        {
+            // Discard the card (game logic)
+            playerDeck.DiscardCard(SelectedCardUI.card);
+
+            // Remove the card from HandUI list before destroying it
+            if (HandUI.Contains(SelectedCardUI))
+            {
+                HandUI.Remove(SelectedCardUI);
+            }
+
+            // Destroy the card UI GameObject
+            Destroy(SelectedCardUI.gameObject);
+
+            // Clear the selected card reference
+            SelectedCardUI = null;
+        }
+        else
+        {
+            Debug.LogWarning("No card is selected to use.");
+        }
+    }
+
 
     public void EndTurn()
     {
@@ -59,12 +108,16 @@ public class Player : Character
 
     private void ClearHand()
     {
-        for (int i = 0; i < GameFlowManager.Instance.cardSpawnParent.transform.childCount; i++)
+        foreach (var cardUI in HandUI)
         {
-            Destroy(GameFlowManager.Instance.cardSpawnParent.transform.GetChild(i).gameObject);
+            if (cardUI != null)
+            {
+                Destroy(cardUI.gameObject);
+            }
         }
-        Hand.Clear();
+        HandUI.Clear(); // Clear the list after destroying all cards
     }
+
 
     public void DrawHand()
     {
@@ -80,26 +133,55 @@ public class Player : Character
         updateHandRoutine = StartCoroutine(DrawCardCO(amount));
     }
 
-    public void GainEnergy(int amount)
+    public bool UseAmmo(int amount)
     {
-        Energy = Mathf.Min(MaxEnergy, Energy + amount);
-    }
-
-    public void UseEnergy(int amount)
-    {
-        if (Energy >= amount)
+        if (Ammo >= amount)
         {
-            Energy -= amount;
+            Ammo -= amount;
+            UpdateAmmoDisplay();
+            return true;
         }
         else
         {
-            Debug.LogWarning("Not enough energy!");
+            AudioManager.Instance.PlaySound("SFX_Empty");
+            Debug.LogWarning("Not enough bullets!");
+            return false;
         }
     }
 
-    public override void PlayTurn()
+    public void UpdateAmmoDisplay(bool gainedAmmo = false)
     {
-        StartTurn();
+        StartCoroutine(UpdateAmmoDisplayCO(gainedAmmo));
+    }
+
+    private IEnumerator UpdateAmmoDisplayCO(bool gainedAmmo = false)
+    {
+        for (int i = bulletImages.Count - 1; i >= 0; i--)
+        {
+            if (i < Ammo)
+            {
+                if (gainedAmmo)
+                {
+                    bulletImages[i].SetActive(true);
+                    AudioManager.Instance.PlaySound("SFX_Reload");
+                    // Spin effect when gaining ammo
+                    bulletParent.localRotation = Quaternion.Euler(0, 0, -360); // Start fully rotated
+                    bulletParent.DORotate(Vector3.forward * 0, 0.5f).SetEase(Ease.OutCubic); // Spin back to default
+                }
+            }
+            else
+            {
+                if (bulletImages[i].activeSelf) // If already inactive, skip rotation
+                {
+                    bulletImages[i].SetActive(false);
+
+                    // Spin effect when losing ammo
+                    yield return new WaitForSeconds(0.5f);
+                    AudioManager.Instance.PlaySound("SFX_Cock");
+                    bulletParent.DORotate(new Vector3(0, 0, -60), 0.5f, RotateMode.LocalAxisAdd).SetEase(Ease.InCubic); // Rotate by 60 degrees
+                }
+            }
+        }
     }
 
     private IEnumerator DrawCardCO(int amount)
@@ -112,19 +194,22 @@ public class Player : Character
                 yield return StartCoroutine(SpawnCardCO(drawnCard));
                 playerDeck.DiscardCard(drawnCard);
             }
-            yield return new WaitForSeconds(.3f);
+            yield return new WaitForSeconds(.2f);
         }
     }
 
     public IEnumerator SpawnCardCO(Card c)
     {
         // Instantiate card
-        GameObject cardObject = Instantiate(GameFlowManager.Instance.cardPrefab, GameFlowManager.Instance.cardSpawnParent.transform);
+        AudioManager.Instance.PlaySound("SFX_PanelOpen");
+
+        GameObject cardObject = Instantiate(GameDataReferences.Instance.cardPrefab, GameDataReferences.Instance.cardSpawnParent.transform);
         CardUI cardUI = cardObject.GetComponent<CardUI>();
         cardUI.SetCard(c);
-        cardObject.transform.DOShakeScale(0.3f);
-        yield return new WaitForSeconds(0.3f);
-        GameFlowManager.Instance.cardSpawnParent.AlignChildrenInArc();
-        Hand.Add(c);
+        cardObject.transform.DOShakeScale(0.2f);
+        yield return new WaitForSeconds(0.2f);
+        GameDataReferences.Instance.cardSpawnParent.AlignChildrenInArc();
+        AudioManager.Instance.PlaySound("SFX_PanelClose");
+        HandUI.Add(cardUI);
     }
 }

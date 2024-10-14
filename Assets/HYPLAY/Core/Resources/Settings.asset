@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86356c65269e24441b830d0ca9ce5360, type: 3}
+  m_Name: Settings
+  m_EditorClassIdentifier: 
+  accessToken: user_at_Smqm7zczIX690EXAjJPOLa94A9E8Ik9mkEK4zDm854EBYPMEqKXPzASwi07yLozR
+  appName: Back To The West
+  appDescription: 3D Deck Building Game With Leaderboard Chase
+  appUrl: https://incredibro.github.io/BackToTheWest
+  timeoutHours: 24
+  usePopup: 1
+  currentApp:
+    id: fa1892fa-5d06-4a21-bcb6-397774ecee94
+    secretKey: app_sk_gFpZ8woIO-MUTzXRlcRImxlm0OpH4mEiEnTGcAJ6K-vmCTaOLHg_4H3rnBDIDVTV
+    name: Back To The West
+    description: 3D Deck Building Game With Leaderboard Chase
+    redirectUris:
+    - https://incredibro.github.io/BackToTheWest/
+    - https://html-classic.itch.zone/html/
+    - http://localhost
+    url: https://indcredibro.github.io/BackToTheWest/
+    iconImageAsset:
+      id: e7fef6e8-1924-4871-98b0-4f11dcae7fc8
+      cdnUrl: https://assets.hyplay.com/1aab08eb-d6a8-44df-be5b-232737f0f5a8/f1d6b2efb404cefe8aded83f7cfc3de6-1727318029481.png
+    backgroundImageAsset:
+      id: 685f647a-eef8-4003-a5ab-ef3990e97875
+      cdnUrl: https://assets.hyplay.com/1aab08eb-d6a8-44df-be5b-232737f0f5a8/61b20a5afd327c7e3b551424ccd12bac-1728820112227.png

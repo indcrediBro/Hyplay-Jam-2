@@ -45,7 +45,26 @@ public class Deck : MonoBehaviour
             shuffledDeck.Add(card);
         }
     }
+    public void ShuffleDiscardPile()
+    {
+        List<Card> cardsToShuffle = new List<Card>(discardPile);
+        shuffledDeck.Clear();
+        discardPile.Clear();
 
+        for (int i = 0; i < cardsToShuffle.Count; i++)
+        {
+            int randomIndex = Random.Range(i, cardsToShuffle.Count);
+            Card temp = cardsToShuffle[i];
+            cardsToShuffle[i] = cardsToShuffle[randomIndex];
+            cardsToShuffle[randomIndex] = temp;
+        }
+
+        // Push cards into the stack
+        foreach (Card card in cardsToShuffle)
+        {
+            shuffledDeck.Add(card);
+        }
+    }
     // Draw a card from the deck
     public Card DrawCard()
     {
@@ -67,11 +86,12 @@ public class Deck : MonoBehaviour
     // Reset the deck from the discard pile when the deck is empty
     private void ResetDeckFromDiscardPile()
     {
-        foreach (Card card in discardPile)
-        {
-            shuffledDeck.Add(card);
-        }
-        discardPile.Clear();
+        //foreach (Card card in discardPile)
+        //{
+        //    shuffledDeck.Add(card);
+        //}
+        //discardPile.Clear();
+        ShuffleDiscardPile();
     }
 
     // Add all scriptable cards into the deck
